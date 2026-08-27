@@ -2986,6 +2986,28 @@ class Array(Column):
 
         return ArrayAppend(array=self, value=value)
 
+    def overlap(self, value: ArrayType) -> QueryString:
+        """
+        A convenient way of accessing the
+        :class:`ArrayOverlap <piccolo.query.functions.array.ArrayOverlap>`
+        function.
+
+        Used in a ``where`` clause to find rows where the array has any
+        values in common with the given array.
+
+        .. code-block:: python
+
+            >>> await Ticket.select().where(
+            ...     Ticket.seat_numbers.overlap([510, 511])
+            ... )
+
+        .. note:: Postgres / CockroachDB only
+
+        """
+        from piccolo.query.functions.array import ArrayOverlap
+
+        return ArrayOverlap(array_1=self, array_2=value)
+
     def replace(
         self, old_value: ArrayItemType, new_value: ArrayItemType
     ) -> QueryString:
