@@ -28,6 +28,13 @@ from .string import (
     Rtrim,
     Upper,
 )
+from .text_search import (
+    Matches,
+    PlainToTsQuery,
+    ToTsQuery,
+    ToTsVector,
+    WebsearchToTsQuery,
+)
 from .type_conversion import Cast
 
 __all__ = (
@@ -52,10 +59,12 @@ __all__ = (
     "Length",
     "Lower",
     "Ltrim",
+    "Matches",
     "Max",
     "Min",
     "Month",
     "NullIf",
+    "PlainToTsQuery",
     "Replace",
     "Reverse",
     "Round",
@@ -63,6 +72,9 @@ __all__ = (
     "Second",
     "Strftime",
     "Sum",
+    "ToTsQuery",
+    "ToTsVector",
     "Upper",
+    "WebsearchToTsQuery",
     "Year",
 )
