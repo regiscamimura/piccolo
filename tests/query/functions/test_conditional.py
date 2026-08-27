@@ -252,6 +252,30 @@ class TestCaseFunction(AsyncTableTest):
             ],
         )
 
+    async def test_query_string_condition(self):
+        """
+        A condition can be a ``QueryString`` as well as a where clause - a
+        function wrapping a column returns one, and ``When`` passes it
+        straight through.
+        """
+        response = await Ticket.select(
+            Ticket.name,
+            Case(
+                When(Upper(Ticket.name).like("SEAT%"), then=1),
+                default=0,
+                alias="seated",
+            ),
+        ).order_by(Ticket.name)
+
+        self.assertListEqual(
+            response,
+            [
+                {"name": "Seated", "seated": 1},
+                {"name": "Standing", "seated": 0},
+                {"name": "VIP", "seated": 0},
+            ],
+        )
+
 
 class TestCaseValidation(TestCase):
 
