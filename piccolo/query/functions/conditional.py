@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import decimal
-import math
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from piccolo.custom_types import BasicTypes, Combinable
@@ -124,41 +123,41 @@ class NullIf(QueryString):
         super().__init__("NULLIF({}, {})", identifier, value, alias=alias)
 
 
+# bool first - it's a subclass of int.
+CAST_TYPES: list[tuple[type, str]] = [
+    (bool, "BOOLEAN"),
+    (int, "BIGINT"),
+    (float, "DOUBLE PRECISION"),
+    (decimal.Decimal, "NUMERIC"),
+    (str, "TEXT"),
+]
+
+
 def get_case_value_string(
     value: Union[Column, QueryString, BasicTypes, None],
 ) -> tuple[str, list[Any]]:
     """
     Works out how a ``THEN`` / ``ELSE`` value should appear in the SQL.
 
-    Most values are passed to the database as query parameters, but numbers,
-    booleans and ``None`` are added to the query directly. This is because
-    Postgres can't infer the type of a bare parameter inside a ``CASE``
-    statement, so it assumes it's text, and the query then fails::
+    Plain Python values are passed as query parameters, wrapped in a ``CAST``,
+    because the database can't infer the type of a bare parameter inside a
+    ``CASE`` statement (Postgres assumes ``text``, Cockroach raises
+    ``IndeterminateDatatypeError``)::
 
-        CASE WHEN "band"."popularity" > $1 THEN $2 ELSE $3 END
-        # asyncpg.exceptions.DataError: invalid input for query argument
-        # $2: 1 (expected str, got int)
+        CASE WHEN "band"."popularity" > $1 THEN CAST($2 AS TEXT) END
 
-    There's no SQL injection risk, because we only do this once we know the
-    value is a Python number or boolean.
+    Columns and other functions are inserted as they are.
 
     :returns:
-        A template fragment (either the literal SQL, or a ``{}`` placeholder),
-        along with any args which belong to it.
+        A template fragment, along with any args which belong to it.
 
     """
     if value is None:
         return ("NULL", [])
-    elif isinstance(value, bool):
-        return ("true" if value else "false", [])
-    elif isinstance(value, int):
-        return (str(value), [])
-    elif isinstance(value, float) and math.isfinite(value):
-        return (repr(value), [])
-    elif isinstance(value, decimal.Decimal) and value.is_finite():
-        return (str(value), [])
-    else:
-        return ("{}", [value])
+    for py_type, sql_type in CAST_TYPES:
+        if isinstance(value, py_type):
+            return (f"CAST({{}} AS {sql_type})", [value])
+    return ("{}", [value])
 
 
 class When(QueryString):
